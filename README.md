@@ -1,7 +1,7 @@
 # Smart India Hackathon Workshop
-# Date:
-## Register Number:
-## Name:
+# Date:26-10-2026
+## Register Number:212224040278
+## Name:RITHISH R
 ## Problem Title
 SIH 1710: Enhancing Navigation for Railway Station Facilities and Locations
 ## Problem Description
@@ -12,14 +12,54 @@ Ministry of Railway
 
 ## Idea
 
+RailNav AI – Smart Railway Station Navigation and Assistance System is a user-friendly navigation platform that helps passengers locate railway station facilities and reach their destinations efficiently using interactive maps, step-by-step directions, voice guidance, and accessible routes.
+
 
 ## Proposed Solution / Architecture Diagram
+
+RailNav AI provides a web application that helps passengers find platforms, ticket counters, restrooms, food courts, waiting halls, lifts, and other facilities. It calculates suitable routes using Dijkstra’s algorithm or A* search and displays estimated walking distances and times. Voice guidance assists visually impaired passengers, while accessible routing helps wheelchair users find suitable paths. QR codes can identify indoor checkpoints, and an administrator dashboard allows facility and route information to be updated.
+<img width="953" height="476" alt="image" src="https://github.com/user-attachments/assets/8c40d736-6237-4771-a5b8-77571a071f95" />
 
 
 ## Use Cases
 
+1. Facility Search: Locate platforms, ticket counters, restrooms, food courts, and waiting areas.
+
+2. Route Navigation: Receive step-by-step directions and estimated walking time.
+
+3. Accessibility Support: Find wheelchair-friendly routes, lifts, and ramps.
+
+4. Voice Assistance: Listen to spoken navigation instructions.
+
+5. Indoor Location: Use QR codes to identify station checkpoints.
+
+6. Station Management: Update facility locations and blocked routes.
+
+7. Passenger Information: Display platform and facility updates when reliable data is available.
 
 ## Technology Stack
 
+- Frontend: HTML, CSS, JavaScript
+- Backend: Python, Flask
+- Database: SQLite
+- Mapping: Leaflet.js, OpenStreetMap
+- Route Planning: Dijkstra’s algorithm, A* search
+- Voice Assistance: Web Speech API
+- Development Environment: Google Antigravity
+- Version Control: Git and GitHub
 
 ## Dependencies
+
+- Python 3.x and Flask
+- SQLite database
+- Leaflet.js and OpenStreetMap
+- Station maps and facility-location data
+- Route-planning algorithms and mapped pathways
+- Browser support for text-to-speech
+- QR codes and a camera or QR scanner
+- Internet connectivity for online map resources
+- Authorized railway APIs or data sources for real-time information, if available
+
+## Expected Outcome
+
+RailNav AI aims to reduce passenger confusion, save time, improve accessibility, and provide a convenient navigation experience within railway stations.
