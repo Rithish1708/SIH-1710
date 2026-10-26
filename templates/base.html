@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>{% block title %}RailNav AI – Smart Railway Station Navigation & Assistance System{% endblock %}</title>
+  <meta name="description" content="SIH 1710: AI-powered indoor navigation system for railway stations providing step-by-step route directions, wheelchair accessible paths, voice assistance, and live platform guidance.">
+  <meta name="theme-color" content="#0c1322">
+
+  <!-- Google Fonts: Outfit & Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- FontAwesome 6 Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <!-- Leaflet Map CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+
+  <!-- RailNav Custom Styling -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body id="app-body">
+
+  <!-- App Header Navigation Bar -->
+  <header class="app-header">
+    <div class="brand-section">
+      <div class="railway-emblem">
+        <i class="fa-solid fa-train-subway"></i>
+      </div>
+      <div class="brand-text">
+        <h1>RailNav AI <span class="badge">SIH 1710</span></h1>
+        <p>Ministry of Railways &bull; Smart Station Navigation</p>
+      </div>
+    </div>
+
+    <div class="header-controls">
+      <!-- Station Switcher Dropdown -->
+      <div class="station-select-wrapper">
+        <select id="station-selector" class="custom-select" onchange="window.location.href='/?station=' + this.value">
+          {% for st in stations %}
+            <option value="{{ st.id }}" {% if current_station and current_station.id == st.id %}selected{% endif %}>
+              {{ st.code }} - {{ st.name }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Language Selector -->
+      <select id="lang-selector" class="custom-select" style="width: 100px;">
+        <option value="en">English</option>
+        <option value="hi">हिंदी (Hindi)</option>
+        <option value="ta">தமிழ் (Tamil)</option>
+      </select>
+
+      <!-- Wheelchair Accessible Mode Toggle -->
+      <button id="btn-toggle-wheelchair" class="btn-icon" title="Toggle Wheelchair / Step-Free Accessible Route" aria-label="Toggle Wheelchair Accessible Route">
+        <i class="fa-solid fa-wheelchair"></i>
+      </button>
+
+      <!-- Voice Guidance Toggle -->
+      <button id="btn-toggle-voice" class="btn-icon" title="Toggle Voice Guidance Announcements" aria-label="Toggle Voice Guidance">
+        <i class="fa-solid fa-volume-high"></i>
+      </button>
+
+      <!-- Kiosk Mode Toggle -->
+      <button id="btn-toggle-kiosk" class="btn-icon" title="Toggle Digital Station Kiosk Mode" aria-label="Toggle Kiosk Mode">
+        <i class="fa-solid fa-desktop"></i>
+      </button>
+
+      <!-- High Contrast Accessibility Mode -->
+      <button id="btn-toggle-contrast" class="btn-icon" title="Toggle High Contrast for Low Vision" aria-label="Toggle High Contrast">
+        <i class="fa-solid fa-circle-half-stroke"></i>
+      </button>
+
+      <!-- QR Codes Print View Link -->
+      <a href="/qr-codes?station={{ current_station.id }}" class="btn-icon" title="Station QR Codes & Checkpoint Sheets">
+        <i class="fa-solid fa-qrcode"></i>
+      </a>
+
+      <!-- Station Master Admin Link -->
+      <a href="/admin?station={{ current_station.id }}" class="btn-icon" title="Station Master Operations Dashboard">
+        <i class="fa-solid fa-sliders"></i>
+      </a>
+
+      <!-- Emergency SOS Button -->
+      <button id="btn-header-sos" class="btn-sos" onclick="openModal('sos-modal')">
+        <i class="fa-solid fa-phone-volume"></i>
+        <span>SOS 139</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Body Content -->
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Emergency SOS & Assistance Request Modal -->
+  <div id="sos-modal" class="modal-backdrop">
+    <div class="modal-content">
+      <button class="modal-close-btn" onclick="closeModal('sos-modal')">&times;</button>
+      <div style="text-align: center; margin-bottom: 20px;">
+        <div style="width: 54px; height: 54px; border-radius: 50%; background: rgba(225, 29, 72, 0.2); color: #e11d48; display: inline-flex; align-items: center; justify-content: center; font-size: 24px; margin-bottom: 10px;">
+          <i class="fa-solid fa-shield-heart"></i>
+        </div>
+        <h2 style="color: white; font-size: 1.3rem;">Emergency & Railway Assistance</h2>
+        <p style="color: var(--text-secondary); font-size: 0.85rem;">Railway Protection Force (RPF) & Medical Emergency Desk</p>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px;">
+        <a href="tel:139" style="text-decoration: none; padding: 12px; background: rgba(239, 68, 68, 0.15); border: 1px solid #ef4444; border-radius: var(--radius-sm); color: #fca5a5; text-align: center; font-weight: 700; font-size: 0.9rem; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-phone" style="font-size: 1.2rem;"></i>
+          <span>Call RPF 139</span>
+        </a>
+        <a href="tel:112" style="text-decoration: none; padding: 12px; background: rgba(59, 130, 246, 0.15); border: 1px solid #3b82f6; border-radius: var(--radius-sm); color: #93c5fd; text-align: center; font-weight: 700; font-size: 0.9rem; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-truck-medical" style="font-size: 1.2rem;"></i>
+          <span>Medical 112</span>
+        </a>
+      </div>
+
+      <hr style="border: 0; border-top: 1px solid var(--border-subtle); margin-bottom: 18px;">
+
+      <h3 style="font-size: 0.95rem; margin-bottom: 12px; color: var(--text-white);">Request Wheelchair / Sahayak Porter</h3>
+      <form id="assistance-form" onsubmit="handleAssistanceSubmit(event)">
+        <div class="form-group">
+          <label class="form-label">Passenger Name</label>
+          <input type="text" id="asst-name" class="form-control" required placeholder="e.g. Ramesh Chandra">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contact Mobile Number</label>
+          <input type="tel" id="asst-phone" class="form-control" required placeholder="+91 98765 43210">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Service Required</label>
+          <select id="asst-type" class="form-control">
+            <option value="wheelchair">Divyangjan Wheelchair Assistance</option>
+            <option value="sahayak_porter">Licensed Sahayak / Porter (Coolie)</option>
+            <option value="medical_emergency">Urgent Medical Stretcher / First Aid</option>
+            <option value="visual_guide">Visual Assistance Guide</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Current Location / Gate</label>
+          <select id="asst-pickup" class="form-control">
+            <option value="ndls_gate1">Gate 1 (Paharganj Main Entry)</option>
+            <option value="ndls_gate2">Gate 2 (Ajmeri Gate Metro)</option>
+            <option value="ndls_gate3">Gate 3 (VIP Parking Entry)</option>
+            <option value="ndls_concourse_main">Central Concourse Plaza</option>
+            <option value="ndls_p1_center">Platform 1</option>
+            <option value="ndls_p2_center">Platform 2</option>
+            <option value="ndls_p3_center">Platform 3</option>
+          </select>
+        </div>
+        <button type="submit" class="btn-primary-action" style="width: 100%; margin-top: 8px;">
+          <i class="fa-solid fa-paper-plane"></i>
+          <span>Submit Request to Station Staff</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- QR Checkpoint Scanner / Simulation Modal -->
+  <div id="qr-modal" class="modal-backdrop">
+    <div class="modal-content">
+      <button class="modal-close-btn" onclick="closeModal('qr-modal')">&times;</button>
+      <div style="text-align: center; margin-bottom: 16px;">
+        <div style="width: 50px; height: 50px; border-radius: 50%; background: rgba(0, 210, 255, 0.15); color: var(--cyan-glow); display: inline-flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 8px;">
+          <i class="fa-solid fa-qrcode"></i>
+        </div>
+        <h2 style="color: white; font-size: 1.25rem;">Scan Station Pillar QR Code</h2>
+        <p style="color: var(--text-secondary); font-size: 0.82rem;">Scan any QR code placed on station pillars, kiosks or gates to set your instant indoor position.</p>
+      </div>
+
+      <!-- Quick Checkpoint Tap Simulator for Instant Demo -->
+      <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 16px;">
+        <p style="font-size: 0.8rem; font-weight: 700; color: var(--ir-gold); margin-bottom: 8px;">
+          <i class="fa-solid fa-bolt"></i> Quick Checkpoint Simulator:
+        </p>
+        <div style="display: flex; flex-wrap: wrap; gap: 6px;" id="qr-quick-pickers">
+          <button class="chip-btn" onclick="simulateQRScan('QR-NDLS-GATE1')">Gate 1 Entry</button>
+          <button class="chip-btn" onclick="simulateQRScan('QR-NDLS-GATE2')">Gate 2 Metro</button>
+          <button class="chip-btn" onclick="simulateQRScan('QR-NDLS-CONCOURSE')">Central Concourse</button>
+          <button class="chip-btn" onclick="simulateQRScan('QR-NDLS-UTS')">UTS Ticket Counter</button>
+          <button class="chip-btn" onclick="simulateQRScan('QR-NDLS-FOOD')">Jan Aahar Food Plaza</button>
+          <button class="chip-btn" onclick="simulateQRScan('QR-NDLS-P1-C')">Platform 1 Center</button>
+          <button class="chip-btn" onclick="simulateQRScan('QR-NDLS-LIFT-C1-0')">Central Lift L1</button>
+          <button class="chip-btn" onclick="simulateQRScan('QR-NDLS-P3-C')">Platform 3 Center</button>
+        </div>
+      </div>
+
+      <!-- Camera Feed or Manual Token Input -->
+      <div class="form-group">
+        <label class="form-label">Or enter QR Token directly:</label>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="manual-qr-input" class="form-control" placeholder="e.g. QR-NDLS-GATE1">
+          <button class="btn-primary-action" style="flex: 0 0 80px;" onclick="handleManualQR()">Locate</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+  <!-- Web Audio Synthesizer (Chimes & Feedback) -->
+  <script>
+    const AudioSynthesizer = {
+      ctx: null,
+      init() {
+        if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
+          this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+      },
+      playChime(freq = 587.33, duration = 0.25) { // D5 chime
+        try {
+          this.init();
+          if (!this.ctx) return;
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch(e) {}
+      },
+      playSuccess() {
+        this.playChime(523.25, 0.15); // C5
+        setTimeout(() => this.playChime(659.25, 0.25), 150); // E5
+      },
+      playTurnAlert() {
+        this.playChime(440, 0.15);
+        setTimeout(() => this.playChime(880, 0.2), 150);
+      }
+    };
+
+    function openModal(id) {
+      document.getElementById(id).style.display = 'flex';
+      AudioSynthesizer.playChime(440, 0.1);
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+
+    // Close modals when clicking backdrop
+    window.addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal-backdrop')) {
+        e.target.style.display = 'none';
+      }
+    });
+
+    async function handleAssistanceSubmit(e) {
+      e.preventDefault();
+      const payload = {
+        station_id: '{{ current_station.id if current_station else "NDLS" }}',
+        passenger_name: document.getElementById('asst-name').value,
+        contact_phone: document.getElementById('asst-phone').value,
+        request_type: document.getElementById('asst-type').value,
+        pickup_node_id: document.getElementById('asst-pickup').value,
+        notes: 'Submitted via RailNav AI web portal'
+      };
+
+      try {
+        const res = await fetch('/api/assistance', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          AudioSynthesizer.playSuccess();
+          alert('Assistance request registered! Station Sahayak and RPF staff have been alerted to meet you at your location.');
+          closeModal('sos-modal');
+          document.getElementById('assistance-form').reset();
+        }
+      } catch(err) {
+        alert('Could not submit request. Please try again.');
+      }
+    }
+  </script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

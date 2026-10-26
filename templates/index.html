@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="main-wrapper">
+  
+  <!-- Left Navigation & Directory Sidebar -->
+  <aside class="sidebar" id="sidebar-panel">
+    
+    <!-- Sidebar Search Section -->
+    <div class="sidebar-header">
+      <div class="search-container">
+        <i class="fa-solid fa-magnifying-glass" style="color: var(--text-muted); margin-right: 8px;"></i>
+        <input type="text" id="facility-search-input" class="search-input" placeholder="Search platform, ticket, food, washroom..." autocomplete="off">
+        <button id="btn-voice-search" class="btn-mic" title="Voice Search (Speak now)">
+          <i class="fa-solid fa-microphone"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Category Filter Chips -->
+    <div class="category-chips-wrapper" id="category-chips">
+      <button class="chip-btn active" data-category="all">
+        <i class="fa-solid fa-layer-group"></i> All
+      </button>
+      <button class="chip-btn" data-category="platform">
+        <i class="fa-solid fa-train"></i> Platforms
+      </button>
+      <button class="chip-btn" data-category="restroom">
+        <i class="fa-solid fa-restroom"></i> Restrooms
+      </button>
+      <button class="chip-btn" data-category="ticket">
+        <i class="fa-solid fa-ticket"></i> Ticketing
+      </button>
+      <button class="chip-btn" data-category="food">
+        <i class="fa-solid fa-utensils"></i> Food Plaza
+      </button>
+      <button class="chip-btn" data-category="waiting_hall">
+        <i class="fa-solid fa-couch"></i> Lounges
+      </button>
+      <button class="chip-btn" data-category="lift">
+        <i class="fa-solid fa-elevator"></i> Lifts & Ramps
+      </button>
+      <button class="chip-btn" data-category="medical">
+        <i class="fa-solid fa-briefcase-medical"></i> Medical & RPF
+      </button>
+    </div>
+
+    <!-- Scrollable Sidebar Body -->
+    <div class="sidebar-body">
+
+      <!-- Active Turn-by-Turn Route Navigation Card (Hidden by default, shown when navigating) -->
+      <section id="active-route-card" class="route-active-card">
+        <div class="route-header">
+          <div>
+            <h3 id="route-dest-title" style="font-size: 1.1rem; color: white; margin-bottom: 2px;">Navigating to Destination</h3>
+            <p id="route-start-text" style="font-size: 0.78rem; color: var(--text-secondary);">From: Gate 1 Entry</p>
+          </div>
+          <button class="btn-icon" style="width: 28px; height: 28px;" onclick="clearActiveRoute()" title="Cancel Navigation">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+
+        <div class="route-summary">
+          <div class="route-distance" id="route-total-distance">0 m</div>
+          <div class="route-eta" id="route-total-eta">&bull; ~0 min walk</div>
+          <span id="route-accessibility-badge" class="badge-wheelchair">
+            <i class="fa-solid fa-wheelchair"></i> Step-Free
+          </span>
+        </div>
+
+        <!-- Turn-by-turn Steps Scroll Area -->
+        <div style="margin-top: 12px; margin-bottom: 6px;">
+          <h4 style="font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-secondary); margin-bottom: 8px;">
+            Turn-by-Turn Directions
+          </h4>
+          <div class="turn-steps-list" id="turn-steps-container">
+            <!-- Dynamically populated step items -->
+          </div>
+        </div>
+
+        <!-- Route Simulation & Voice Controls -->
+        <div class="route-actions">
+          <button id="btn-read-steps" class="btn-primary-action" onclick="toggleSpeechReadout()">
+            <i class="fa-solid fa-volume-high"></i>
+            <span id="speech-btn-label">Spoken Guide</span>
+          </button>
+          <button class="btn-secondary-action" onclick="simulateStepForward()" title="Advance simulation one step">
+            <i class="fa-solid fa-forward-step"></i> Next
+          </button>
+          <button class="btn-secondary-action" onclick="clearActiveRoute()" title="Clear path">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </div>
+      </section>
+
+      <!-- Live Train Departure & Platform Assignment Board -->
+      <section class="train-board-card">
+        <div class="section-title">
+          <span><i class="fa-solid fa-train-subway" style="color: var(--ir-saffron); margin-right: 6px;"></i> Live Train Platform Status</span>
+          <span style="font-size: 0.7rem; color: var(--emerald);"><i class="fa-solid fa-circle" style="font-size: 0.5rem;"></i> Live</span>
+        </div>
+        <div id="trains-list-container">
+          <!-- Populated dynamically via /api/trains -->
+          <p style="color: var(--text-muted); font-size: 0.8rem; text-align: center;">Loading live train schedules...</p>
+        </div>
+      </section>
+
+      <!-- Station Facilities Directory Section -->
+      <section>
+        <div class="section-title">
+          <span><i class="fa-solid fa-location-dot" style="color: var(--cyan-glow); margin-right: 6px;"></i> Station Facilities & Amenities</span>
+          <span id="facility-count-badge" style="font-size: 0.75rem; color: var(--text-muted);">0 found</span>
+        </div>
+        <div id="facilities-list-container">
+          <!-- Populated dynamically via /api/facilities -->
+        </div>
+      </section>
+
+    </div>
+  </aside>
+
+  <!-- Interactive Map Canvas Container -->
+  <div class="map-canvas-container">
+    
+    <!-- Floor Level Switcher Overlay -->
+    <div class="floor-switcher-overlay">
+      <button class="floor-btn active" id="btn-floor-0" onclick="switchFloor(0)">
+        <i class="fa-solid fa-layer-group"></i>
+        <span>Level 0: Ground & Platforms</span>
+      </button>
+      <button class="floor-btn" id="btn-floor-1" onclick="switchFloor(1)">
+        <i class="fa-solid fa-bridge"></i>
+        <span>Level 1: Foot Overbridge (FOB)</span>
+      </button>
+    </div>
+
+    <!-- Map Top-Right Utilities Overlay -->
+    <div class="map-tools-overlay">
+      <button class="tool-badge-btn" id="btn-map-wheelchair" onclick="toggleWheelchairMode()">
+        <i class="fa-solid fa-wheelchair"></i>
+        <span id="wheelchair-label">Accessible Route: Off</span>
+      </button>
+      <button class="tool-badge-btn" onclick="resetMapView()" title="Center Map View">
+        <i class="fa-solid fa-crosshairs"></i>
+        <span>Center View</span>
+      </button>
+    </div>
+
+    <!-- Voice Visualizer Floating Notification -->
+    <div id="voice-visualizer" class="voice-visualizer-bar">
+      <div class="voice-bars">
+        <div class="v-bar"></div>
+        <div class="v-bar"></div>
+        <div class="v-bar"></div>
+        <div class="v-bar"></div>
+        <div class="v-bar"></div>
+      </div>
+      <span class="voice-status-text" id="voice-status-msg">Voice Guidance Active</span>
+      <button onclick="stopSpeechReadout()" style="background: none; border: none; color: var(--text-muted); cursor: pointer;">
+        <i class="fa-solid fa-circle-xmark"></i>
+      </button>
+    </div>
+
+    <!-- Quick Floating Action Dock (Bottom Right) -->
+    <div class="floating-actions-dock">
+      <button class="dock-btn" onclick="openModal('qr-modal')" title="Scan Station Checkpoint QR Code">
+        <i class="fa-solid fa-qrcode" style="color: var(--cyan-glow);"></i>
+        <span>Scan QR Checkpoint</span>
+      </button>
+      <button class="dock-btn" onclick="startVoiceSearch()" title="Speak Voice Command">
+        <i class="fa-solid fa-microphone" style="color: var(--ir-saffron);"></i>
+        <span>Voice Search</span>
+      </button>
+      <button class="dock-btn" onclick="openModal('sos-modal')" title="Request Wheelchair Assistance">
+        <i class="fa-solid fa-wheelchair" style="color: var(--emerald);"></i>
+        <span>Request Sahayak</span>
+      </button>
+    </div>
+
+    <!-- Leaflet Station Map Div -->
+    <div id="station-map"></div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Global config variables
+  window.CURRENT_STATION_ID = "{{ current_station.id if current_station else 'NDLS' }}";
+  window.CURRENT_STATION_NAME = "{{ current_station.name if current_station else 'New Delhi Central' }}";
+</script>
+<script src="{{ url_for('static', filename='js/speech.js') }}"></script>
+<script src="{{ url_for('static', filename='js/map.js') }}"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% endblock %}

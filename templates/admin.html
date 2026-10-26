@@ -1,0 +1,397 @@
+{% extends "base.html" %}
+
+{% block title %}Station Master & Admin Dashboard – RailNav AI{% endblock %}
+
+{% block content %}
+<div style="padding: 24px 32px; max-width: 1400px; margin: 0 auto; height: calc(100vh - 64px); overflow-y: auto;">
+  
+  <!-- Dashboard Top Bar -->
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;">
+    <div>
+      <h1 style="font-size: 1.6rem; color: white;">Station Operations & Facility Control Center</h1>
+      <p style="color: var(--text-secondary); font-size: 0.85rem;">
+        Station: <strong>{{ current_station.name }} ({{ current_station.code }})</strong> &bull; Division: {{ current_station.division }}
+      </p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <a href="/?station={{ current_station.id }}" class="btn-primary-action" style="text-decoration: none;">
+        <i class="fa-solid fa-map-location-dot"></i> View Passenger Map
+      </a>
+      <a href="/qr-codes?station={{ current_station.id }}" class="btn-secondary-action" style="text-decoration: none;">
+        <i class="fa-solid fa-print"></i> Print QR Checkpoints
+      </a>
+    </div>
+  </div>
+
+  <!-- Key Metrics Row -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-bottom: 24px;">
+    
+    <div class="glass-panel" style="padding: 18px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 700;">Station Facilities</span>
+        <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(59, 130, 246, 0.2); color: #60a5fa; display: flex; align-items: center; justify-content: center;">
+          <i class="fa-solid fa-building-circle-check"></i>
+        </div>
+      </div>
+      <div id="stat-facilities-count" style="font-size: 1.8rem; font-weight: 800; color: white;">Loading...</div>
+      <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Searchable passenger amenities</p>
+    </div>
+
+    <div class="glass-panel" style="padding: 18px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 700;">Live Scheduled Trains</span>
+        <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(245, 158, 11, 0.2); color: #fbbf24; display: flex; align-items: center; justify-content: center;">
+          <i class="fa-solid fa-train"></i>
+        </div>
+      </div>
+      <div id="stat-trains-count" style="font-size: 1.8rem; font-weight: 800; color: white;">Loading...</div>
+      <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Assigned to Platforms 1 to 7</p>
+    </div>
+
+    <div class="glass-panel" style="padding: 18px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 700;">Assistance Requests</span>
+        <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(16, 185, 129, 0.2); color: #34d399; display: flex; align-items: center; justify-content: center;">
+          <i class="fa-solid fa-wheelchair"></i>
+        </div>
+      </div>
+      <div id="stat-assistance-count" style="font-size: 1.8rem; font-weight: 800; color: white;">Loading...</div>
+      <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Wheelchair & Porter dispatches</p>
+    </div>
+
+    <div class="glass-panel" style="padding: 18px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <span style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-secondary); font-weight: 700;">Active Route Blocks</span>
+        <div style="width: 36px; height: 36px; border-radius: 8px; background: rgba(239, 68, 68, 0.2); color: #f87171; display: flex; align-items: center; justify-content: center;">
+          <i class="fa-solid fa-road-barrier"></i>
+        </div>
+      </div>
+      <div id="stat-blocks-count" style="font-size: 1.8rem; font-weight: 800; color: white;">0</div>
+      <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">Pathways under maintenance/repair</p>
+    </div>
+
+  </div>
+
+  <!-- Main Operational Controls (2 Columns) -->
+  <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 20px;">
+    
+    <!-- Left Column: Facilities Maintenance & Pathway Route Blocker -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      
+      <!-- Facility Operational Status Manager -->
+      <div class="glass-panel" style="padding: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <div>
+            <h3 style="font-size: 1.1rem; color: white;">Facility Operational Status</h3>
+            <p style="font-size: 0.78rem; color: var(--text-secondary);">
+              Toggle status between Operational, Maintenance, or Crowded. Real-time updates push to passenger maps.
+            </p>
+          </div>
+        </div>
+        <div id="admin-facilities-table" style="max-height: 380px; overflow-y: auto;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Pathway & Corridor Obstacle Manager (Use Case 6: Dynamic Detour Testing) -->
+      <div class="glass-panel" style="padding: 20px;">
+        <div style="margin-bottom: 16px;">
+          <h3 style="font-size: 1.1rem; color: white;">Pathway Maintenance & Dynamic Detour Control</h3>
+          <p style="font-size: 0.78rem; color: var(--text-secondary);">
+            Block a staircase, escalator, or bridge for maintenance. RailNav AI pathfinding automatically recalculates alternate routes!
+          </p>
+        </div>
+        <div id="admin-edges-table" style="max-height: 300px; overflow-y: auto;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Live Train Platform Allocator & Assistance Requests Board -->
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+      
+      <!-- Train Platform Reassignment Board -->
+      <div class="glass-panel" style="padding: 20px;">
+        <div style="margin-bottom: 14px;">
+          <h3 style="font-size: 1.1rem; color: white;">Live Train Platform Allocator</h3>
+          <p style="font-size: 0.78rem; color: var(--text-secondary);">
+            Update platform allocations in real-time. Passenger routes adapt immediately.
+          </p>
+        </div>
+        <div id="admin-trains-table" style="max-height: 280px; overflow-y: auto;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Special Assistance & SOS Log -->
+      <div class="glass-panel" style="padding: 20px;">
+        <div style="margin-bottom: 14px;">
+          <h3 style="font-size: 1.1rem; color: white;">Passenger Assistance & SOS Queue</h3>
+          <p style="font-size: 0.78rem; color: var(--text-secondary);">
+            Requests for Divyangjan Wheelchairs, Porters, and Medical emergency.
+          </p>
+        </div>
+        <div id="admin-assistance-table" style="max-height: 380px; overflow-y: auto;">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const CURRENT_STATION_ID = "{{ current_station.id if current_station else 'NDLS' }}";
+
+  document.addEventListener('DOMContentLoaded', () => {
+    loadAdminData();
+  });
+
+  async function loadAdminData() {
+    await loadFacilities();
+    await loadEdges();
+    await loadTrains();
+    await loadAssistanceRequests();
+  }
+
+  async function loadFacilities() {
+    try {
+      const res = await fetch(`/api/facilities?station_id=${CURRENT_STATION_ID}`);
+      const facilities = await res.json();
+      document.getElementById('stat-facilities-count').textContent = facilities.length;
+
+      const container = document.getElementById('admin-facilities-table');
+      container.innerHTML = `
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-primary);">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border-subtle); text-align: left; color: var(--text-secondary); font-size: 0.75rem; text-transform: uppercase;">
+              <th style="padding: 8px 10px;">Facility</th>
+              <th style="padding: 8px 10px;">Category</th>
+              <th style="padding: 8px 10px;">Floor</th>
+              <th style="padding: 8px 10px;">Current Status</th>
+              <th style="padding: 8px 10px; text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${facilities.map(f => `
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                <td style="padding: 10px; font-weight: 600; color: white;">
+                  <i class="fa-solid ${f.icon}" style="margin-right: 6px; color: var(--ir-saffron);"></i>
+                  ${f.name}
+                </td>
+                <td style="padding: 10px; color: var(--text-secondary);">${f.category}</td>
+                <td style="padding: 10px; color: var(--text-secondary);">${f.floor === 1 ? 'Level 1 (FOB)' : 'Ground Level'}</td>
+                <td style="padding: 10px;">
+                  <span class="status-dot status-${f.status}"></span>
+                  <span style="text-transform: capitalize; font-weight: 600; margin-left: 4px;">${f.status}</span>
+                </td>
+                <td style="padding: 10px; text-align: right;">
+                  <select onchange="updateFacilityStatus(${f.id}, this.value)" class="custom-select" style="padding: 4px 8px; font-size: 0.78rem;">
+                    <option value="operational" ${f.status === 'operational' ? 'selected' : ''}>Operational</option>
+                    <option value="maintenance" ${f.status === 'maintenance' ? 'selected' : ''}>Maintenance</option>
+                    <option value="crowded" ${f.status === 'crowded' ? 'selected' : ''}>Crowded</option>
+                  </select>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  async function updateFacilityStatus(facilityId, newStatus) {
+    try {
+      const res = await fetch('/api/admin/facility/status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ facility_id: facilityId, status: newStatus })
+      });
+      const data = await res.json();
+      if (data.success) {
+        AudioSynthesizer.playSuccess();
+        loadFacilities();
+      }
+    } catch(e) {}
+  }
+
+  async function loadEdges() {
+    try {
+      const res = await fetch(`/api/edges?station_id=${CURRENT_STATION_ID}`);
+      const edges = await res.json();
+      const blockedCount = edges.filter(e => e.is_blocked).length;
+      document.getElementById('stat-blocks-count').textContent = blockedCount;
+
+      const container = document.getElementById('admin-edges-table');
+      container.innerHTML = `
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-primary);">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border-subtle); text-align: left; color: var(--text-secondary); font-size: 0.75rem; text-transform: uppercase;">
+              <th style="padding: 8px 10px;">Pathway Pathway</th>
+              <th style="padding: 8px 10px;">Type</th>
+              <th style="padding: 8px 10px;">Length</th>
+              <th style="padding: 8px 10px;">Step-Free ♿</th>
+              <th style="padding: 8px 10px; text-align: right;">Route Access</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${edges.map(e => `
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.04); ${e.is_blocked ? 'background: rgba(239,68,68,0.1);' : ''}">
+                <td style="padding: 10px; font-weight: 500;">
+                  ${e.description || `${e.node_a} &harr; ${e.node_b}`}
+                </td>
+                <td style="padding: 10px; text-transform: capitalize; color: var(--text-secondary);">${e.pathway_type}</td>
+                <td style="padding: 10px; color: var(--text-secondary);">${Math.round(e.distance)}m</td>
+                <td style="padding: 10px; color: ${e.is_wheelchair_accessible ? 'var(--emerald)' : 'var(--text-muted)'};">
+                  ${e.is_wheelchair_accessible ? '<i class="fa-solid fa-check"></i> Yes' : '<i class="fa-solid fa-xmark"></i> No'}
+                </td>
+                <td style="padding: 10px; text-align: right;">
+                  <button onclick="toggleEdgeBlock(${e.id}, ${!e.is_blocked})" 
+                    class="${e.is_blocked ? 'btn-primary-action' : 'btn-secondary-action'}" 
+                    style="padding: 4px 10px; font-size: 0.75rem; display: inline-flex;">
+                    ${e.is_blocked ? '<i class="fa-solid fa-lock"></i> Unblock' : '<i class="fa-solid fa-ban"></i> Block'}
+                  </button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    } catch(e) {}
+  }
+
+  async function toggleEdgeBlock(edgeId, isBlocked) {
+    try {
+      const res = await fetch('/api/admin/edge/block', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ edge_id: edgeId, is_blocked: isBlocked })
+      });
+      const data = await res.json();
+      if (data.success) {
+        AudioSynthesizer.playChime(isBlocked ? 350 : 650, 0.15);
+        loadEdges();
+      }
+    } catch(e) {}
+  }
+
+  async function loadTrains() {
+    try {
+      const res = await fetch(`/api/trains?station_id=${CURRENT_STATION_ID}`);
+      const trains = await res.json();
+      document.getElementById('stat-trains-count').textContent = trains.length;
+
+      const container = document.getElementById('admin-trains-table');
+      container.innerHTML = `
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; color: var(--text-primary);">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border-subtle); text-align: left; color: var(--text-secondary); font-size: 0.75rem; text-transform: uppercase;">
+              <th style="padding: 8px 10px;">Train</th>
+              <th style="padding: 8px 10px;">Departure</th>
+              <th style="padding: 8px 10px;">Status</th>
+              <th style="padding: 8px 10px; text-align: right;">Platform</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${trains.map(t => `
+              <tr style="border-bottom: 1px solid rgba(255,255,255,0.04);">
+                <td style="padding: 10px; font-weight: 600; color: white;">
+                  ${t.train_number} - ${t.train_name}
+                </td>
+                <td style="padding: 10px; color: var(--ir-saffron); font-weight: 600;">${t.departure_time}</td>
+                <td style="padding: 10px; color: ${t.delay_minutes > 0 ? '#ef4444' : '#10b981'};">${t.status}</td>
+                <td style="padding: 10px; text-align: right;">
+                  <select onchange="updateTrainPlatform(${t.id}, this.value)" class="custom-select" style="padding: 4px 8px; font-size: 0.78rem;">
+                    ${[1, 2, 3, 4, 5, 6, 7].map(p => `
+                      <option value="${p}" ${String(t.platform) === String(p) ? 'selected' : ''}>Platform ${p}</option>
+                    `).join('')}
+                  </select>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    } catch(e) {}
+  }
+
+  async function updateTrainPlatform(trainId, newPlat) {
+    try {
+      const res = await fetch('/api/admin/train/platform', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ train_id: trainId, platform: newPlat })
+      });
+      const data = await res.json();
+      if (data.success) {
+        AudioSynthesizer.playSuccess();
+        loadTrains();
+      }
+    } catch(e) {}
+  }
+
+  async function loadAssistanceRequests() {
+    try {
+      const res = await fetch(`/api/assistance?station_id=${CURRENT_STATION_ID}`);
+      const reqs = await res.json();
+      document.getElementById('stat-assistance-count').textContent = reqs.length;
+
+      const container = document.getElementById('admin-assistance-table');
+      if (reqs.length === 0) {
+        container.innerHTML = `<p style="color: var(--text-muted); font-size: 0.8rem; text-align: center; padding: 20px;">No pending assistance requests.</p>`;
+        return;
+      }
+
+      container.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          ${reqs.map(r => `
+            <div style="padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: var(--radius-sm);">
+              <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px;">
+                <div>
+                  <h4 style="font-size: 0.9rem; color: white; font-weight: 700;">${r.passenger_name}</h4>
+                  <p style="font-size: 0.75rem; color: var(--text-secondary);"><i class="fa-solid fa-phone"></i> ${r.contact_phone}</p>
+                </div>
+                <span style="font-size: 0.72rem; padding: 2px 8px; border-radius: 9999px; font-weight: 700; text-transform: uppercase;
+                  background: ${r.status === 'completed' ? 'rgba(16,185,129,0.2)' : r.status === 'assigned' ? 'rgba(59,130,246,0.2)' : 'rgba(245,158,11,0.2)'};
+                  color: ${r.status === 'completed' ? '#34d399' : r.status === 'assigned' ? '#60a5fa' : '#fbbf24'};">
+                  ${r.status}
+                </span>
+              </div>
+              <p style="font-size: 0.78rem; color: var(--text-primary); margin-bottom: 8px;">
+                <strong>Service:</strong> ${r.request_type} &bull; <strong>Pickup:</strong> ${r.pickup_node_id}
+              </p>
+              ${r.notes ? `<p style="font-size: 0.74rem; color: var(--text-muted); margin-bottom: 8px; font-style: italic;">"${r.notes}"</p>` : ''}
+              <div style="display: flex; gap: 6px; justify-content: flex-end;">
+                <button onclick="updateAssistanceStatus(${r.id}, 'assigned')" class="btn-secondary-action" style="padding: 4px 8px; font-size: 0.72rem;">Assign Staff</button>
+                <button onclick="updateAssistanceStatus(${r.id}, 'completed')" class="btn-primary-action" style="padding: 4px 8px; font-size: 0.72rem;">Mark Completed</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    } catch(e) {}
+  }
+
+  async function updateAssistanceStatus(reqId, newStatus) {
+    try {
+      const res = await fetch(`/api/assistance/${reqId}/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      const data = await res.json();
+      if (data.success) {
+        AudioSynthesizer.playSuccess();
+        loadAssistanceRequests();
+      }
+    } catch(e) {}
+  }
+</script>
+{% endblock %}
